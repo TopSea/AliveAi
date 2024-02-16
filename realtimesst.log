@@ -1,0 +1,2 @@
+RealTimeSTT: root - WARNING - Audio queue size exceeds latency limit. Current size: 250. Discarding old audio chunks.
+RealTimeSTT: root - WARNING - Audio queue size exceeds latency limit. Current size: 20. Discarding old audio chunks.

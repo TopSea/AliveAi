@@ -35,3 +35,5 @@ def change_motion():
  
 if __name__ == '__main__':
     change_motion()
+
+    # pip install torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
