@@ -30,10 +30,34 @@ def change_motion():
         "interrupt": False,                 # 是否打断当前的动作
     }
     response = requests.post(True_url, json=payload)
+    # ！！！注意是 .text 不是 .json ！！！
+    reply = response.text
+    format_json(reply)
+
+def change_volume():
+    url = "/change/volume"
+    True_url = base_url+url
+    payload = {
+        "mode": "mmd",                   
+        "volume": 1,
+        "uu_json": None,                        
+    }
+    response = requests.post(True_url, json=payload)
+    # ！！！注意是 .text 不是 .json ！！！
+    reply = response.text
+    format_json(reply)
+
+def minify_alive():
+    url = "/change/minify"
+    True_url = base_url+url
+    payload = {
+        "minify": False,                      
+    }
+    response = requests.post(True_url, json=payload)
     reply = response.text
     format_json(reply)
  
 if __name__ == '__main__':
-    change_motion()
+    minify_alive()
 
     # pip install torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
