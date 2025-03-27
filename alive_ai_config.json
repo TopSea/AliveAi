@@ -1,0 +1,29 @@
+{
+    "llm": {
+        "conversation_history": 3,
+        "ollama": {
+            "max_tokens": 4096,
+            "model_name": "",
+            "ollama_api": "http://localhost:11434/api/chat",
+            "ollama_keep_alive": 10
+        },
+        "selected_llm": "ollama"
+    },
+    "stt": {
+        "buffer_duration": 0.5,
+        "language": "medium",
+        "sensitivity": 0.35,
+        "stt_model": "zh",
+        "wake_word": "Furina"
+    },
+    "tts": {
+        "cosy": {
+            "cosy_api": "http://localhost:50000/inference_instruct2",
+            "instruct_text": "",
+            "speaker": "布洛妮娅",
+            "speed": 1.1
+        },
+        "selected_tts": "cosy",
+        "stream": true
+    }
+}
