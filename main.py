@@ -1,4 +1,5 @@
 import datetime
+import io
 import json
 import os
 import sys
@@ -7,7 +8,7 @@ import time
 import requests
 from alive.api_llm import AliveMessage, OllamaMessage, ollama_gen
 from alive.api_tts import cosy_tts_gen
-from fastapi import FastAPI, Form, HTTPException
+from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 from pydantic import BaseModel
 from pydub import AudioSegment
 from pydub.playback import play
@@ -17,7 +18,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from RealtimeSTT import AudioToTextRecorder
 import uvicorn
-
+from faster_whisper import WhisperModel
 from alive.alive_config import AliveConfig, initialize_config_file
 
 
@@ -25,6 +26,11 @@ class AliveChatRequest(BaseModel):
     model: str
     messages: List[AliveMessage]
 
+
+model_size = "medium"
+
+# Run on GPU with FP16
+model = WhisperModel(model_size, device="cuda", compute_type="float16")
 
 # 获取全局配置实例
 alive_config: AliveConfig
@@ -130,6 +136,38 @@ async def forward_to_ollama(config_str: str = Form()):
     pass
 
 
+# 接收 Alive 发来的音频信息，使用 faster-whisper 转文本，然后发给 llm 服务
+@app.post("/alive_stt/")
+async def alive_stt(file: UploadFile = File(...)):
+    try:
+        # 检查文件类型是否为音频
+        if not file.filename.endswith((".wav", ".mp3", ".ogg")):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file type. Only audio files are allowed.",
+            )
+
+        # 读取文件内容到内存
+        file_content = await file.read()
+
+        # 将文件内容转换为 BytesIO 对象
+        audio_file = io.BytesIO(file_content)
+
+        segments, info = model.transcribe(audio_file, beam_size=5)
+
+        print(
+            "Detected language '%s' with probability %f"
+            % (info.language, info.language_probability)
+        )
+
+        for segment in segments:
+            print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+
+        return {"message": "Audio file saved successfully as temp.wav"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 def process_text(text):
     succeed = False
     # 执行命令
@@ -161,23 +199,9 @@ if __name__ == "__main__":
     tts_thread.start()
 
     # 启动 uvicorn 服务器线程
-    def run_uvicorn():
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+    # def run_uvicorn():
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
-    uvicorn_thread = threading.Thread(target=run_uvicorn)
-    uvicorn_thread.daemon = True  # 设置为守护线程
-    uvicorn_thread.start()
-
-    with AudioToTextRecorder(
-        wakeword_backend="oww",
-        wake_words_sensitivity=0.35,
-        openwakeword_model_paths="./model/wakeword/furina.onnx",
-        wake_word_buffer_duration=0.5,
-        model="medium",
-        language="zh",
-        device="cuda",
-    ) as recorder:
-
-        print(f'Say "Furina" to start recording.')
-        while True:
-            recorder.text(process_text)
+    # uvicorn_thread = threading.Thread(target=run_uvicorn)
+    # uvicorn_thread.daemon = True  # 设置为守护线程
+    # uvicorn_thread.start()
