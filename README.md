@@ -1,26 +1,21 @@
 # AliveAi
-适用于 [Alive][Alive] 的 ai 工具包。
+完全本地部署的可语音唤醒的 AI 助手。   
+适配了 [Alive][Alive] 。
 
-**我对 Python 的了解不多，也就只会写几个简单的脚本，欢迎提 issue 和 pr。**
+**我对 Python 的了解不多，也就只会写几个简单的脚本，代码可能写的很烂，特别是多线程部分。欢迎提 issue 和 pr。**
 
-## 功能计划
-- 实现和语言类大模型的语音对话；
-- 对 Alive 的控制和互动。   
-
-虽然两句话就说完了，但是实现起来还是有些难度的。   
+## 上游依赖
+**需要 Ollama API 服务** 
 
 ## 流程规划
-- 用 [RealtimeSTT][RealtimeSTT] 实现语音唤醒和语音识别；
+- [x] 用 [RealtimeSTT] 实现语音唤醒和语音识别
+- [ ] 将识别到的语音分类：如果是指令就直接执行，否则将识别的内容发送给大语言模型
+- [x] 连接 [Ollama] 服务器，生成对话
+- [x] 使用 [Cosyvoice] 将文本转成语音并播放
 
-- 将识别到的语音分类：如果是对 Alive 的指令就直接发送给 Alive 执行，否则将识别的内容发送给大语言模型；
-
-- 大语言模型发送回来的内容，同时：
-    - 使用 [GPT-SoVITS][GPT-SoVITS] 生成对应人物的语音；
-    - 做情感分析后把指令发送给 Alive。
-
-- 播放动作和语音。
 
 
 [Alive]: https://github.com/TopSea/Alive
 [RealtimeSTT]: https://github.com/KoljaB/RealtimeSTT
-[GPT-SoVITS]: https://github.com/RVC-Boss/GPT-SoVITS
+[Ollama]: https://github.com/ollama/ollama
+[Cosyvoice]: https://github.com/FunAudioLLM/CosyVoice
