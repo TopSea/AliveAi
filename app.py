@@ -8,12 +8,12 @@ from alive.api_llm import AliveMessage, split_by_period
 from fastapi.middleware.cors import CORSMiddleware
 from alive.local_tts import (
     append_tts_queue,
+    check_and_encode,
     check_audio,
     is_tts_done,
     set_tts_start,
     tts_task_queue,
 )
-from cosyvoice.cli.cosyvoice import CosyVoice2
 from typing import Dict, List
 from pydantic import BaseModel
 import threading
@@ -82,6 +82,18 @@ async def websocket_endpoint(websocket: WebSocket):
                 else:
                     time.sleep(0.1)
 
+        # This func is fine. the client can not decode this many chars.
+        async def send_audio_encoded():
+            print("send_audio: ", is_tts_done())
+            while not is_tts_done:
+                audio_code = check_and_encode()
+                # 检查是否有 tts 文件生成了，如果有就发送
+                if audio_code:
+                    audio_data = {"data": audio_code}
+                    await websocket.send_json(json.dumps(audio_data))
+                else:
+                    time.sleep(0.1)
+
         # 主线程处理文字消息并发送任务到伴生线程
         async def send_text():
             txt: str = ""
@@ -118,14 +130,10 @@ async def websocket_endpoint(websocket: WebSocket):
                                     txt = next
 
                             # 检查是否有 tts 文件生成了，如果有就发送
-                            audio = check_audio()
-                            if audio:
-                                with open(audio, mode="rb") as file_like:
-                                    await websocket.send_bytes(file_like.read())
-                                try:
-                                    os.remove(audio)
-                                except Exception as e:
-                                    print(f"删除文件时出错: {e}")
+                            # file_name, audio_code = check_and_encode()
+                            # if audio_code:
+                            #     audio_data = {"name": file_name, "audio": audio_code}
+                            #     await websocket.send_json(json.dumps(audio_data))
 
                             if obj.get("done"):
                                 # 最后一句记得加上
@@ -141,7 +149,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
         # 并发运行文字发送任务
         if alive_msg.get("ollama_msg"):
-            set_tts_start()
+            # set_tts_start()
             # 并发运行 TTS 生成和文字发送任务
             await send_text()
 
@@ -155,7 +163,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 if __name__ == "__main__":
-    cosyvoice = CosyVoice2("models/CosyVoice2-0.5B")
     alive_config = AliveConfig()
     # 初始化配置文件
     # try:
@@ -166,9 +173,9 @@ if __name__ == "__main__":
     #     sys.exit(1)  # 退出程序
 
     # 启动 tts_gen_queue 线程
-    tts_thread = threading.Thread(target=tts_task_queue, args=())
-    tts_thread.daemon = True  # 设置为守护线程，主程序退出时自动终止
-    tts_thread.start()
+    # tts_thread = threading.Thread(target=tts_task_queue, args=())
+    # tts_thread.daemon = True  # 设置为守护线程，主程序退出时自动终止
+    # tts_thread.start()
 
     # 启动 uvicorn 服务器线程
     uvicorn.run(app, host="0.0.0.0", port=8000)

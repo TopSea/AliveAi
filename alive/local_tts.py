@@ -4,7 +4,9 @@ import torch
 import torchaudio
 from cosyvoice.cli.cosyvoice import CosyVoice2
 from alive.alive_config import AliveConfig
+import base64
 import os
+from pydub import AudioSegment
 
 cosyvoice = CosyVoice2(
     "models/CosyVoice2-0.5B", load_jit=False, load_trt=False, fp16=True
@@ -130,5 +132,21 @@ def check_audio():
     files.sort()
 
     first_file_path = os.path.join(audio_path, files[0])
-    print(f"first fil is: {first_file_path}")
+    print(f"first file is: {first_file_path}")
     return first_file_path
+
+
+def check_and_encode():
+    """return if has generated audio file in base64 code. return the first one"""
+    first_file_path = check_audio()
+    if not first_file_path:
+        return None, None
+    return read_audio_file(first_file_path)
+
+
+def read_audio_file(file_path: str) -> str:
+    audio = AudioSegment.from_file(file_path)
+    audio_bytes = audio.raw_data
+    base64_data = base64.b64encode(audio_bytes).decode("utf-8")
+    os.remove(file_path)
+    return base64_data
