@@ -1,21 +1,13 @@
-import os
-import sys
-import argparse
-import logging
-
-import torch
-
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
-from fastapi import FastAPI, UploadFile, Form, File
-from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+from fastapi.responses import StreamingResponse
+from cosyvoice.cli.cosyvoice import CosyVoice2
+from fastapi import FastAPI, Form
 import numpy as np
+import argparse
+import uvicorn
+import torch
+import os
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append("{}/third_party/Matcha-TTS".format(ROOT_DIR))
-from cosyvoice.cli.cosyvoice import CosyVoice, CosyVoice2
-from cosyvoice.utils.file_utils import load_wav
 
 app = FastAPI()
 # set cross region allowance
@@ -30,7 +22,7 @@ app.add_middleware(
 
 def load_voice_data(speaker):
     """加载语音数据"""
-    voice_path = f"{ROOT_DIR}/voices/{speaker}.pt"
+    voice_path = f"./models/tts_voices/{speaker}.pt"
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if not os.path.exists(voice_path):
@@ -47,7 +39,7 @@ def generate_data(model_output):
         yield tts_audio
 
 
-@app.post("/inference_instruct2")
+@app.post("/cosy_stream")
 async def inference_instruct2(
     tts_text: str = Form(),
     instruct_text: str = Form(),
@@ -65,7 +57,7 @@ async def inference_instruct2(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=50000)
+    parser.add_argument("--port", type=int, default=20181)
     args = parser.parse_args()
 
     cosyvoice = CosyVoice2("models/CosyVoice2-0.5B")

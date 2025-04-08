@@ -3,7 +3,7 @@
         "conversation_history": 3,
         "ollama": {
             "max_tokens": 4096,
-            "model_name": "",
+            "model_name": "qwen2.5:3b",
             "ollama_api": "http://localhost:11434/api/chat",
             "ollama_keep_alive": 10
         },
@@ -19,8 +19,8 @@
     "tts": {
         "cosy": {
             "cosy_api": "http://localhost:50000/inference_instruct2",
-            "instruct_text": "",
-            "speaker": "布洛妮娅",
+            "instruct_text": "今天的工作都完成了，没什么事就早点回家吧。",
+            "speaker": "芙宁娜",
             "speed": 1.1
         },
         "selected_tts": "cosy",
