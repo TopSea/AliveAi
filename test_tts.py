@@ -37,7 +37,7 @@ for line in test_tts_queue:
 print("line: ", txt)
 append_tts_queue(txt, index)
 
-tts_task_queue()
+tts_task_queue("遐蝶")
 
 # tts_thread = threading.Thread(target=tts_task_queue, args=())
 # tts_thread.start()

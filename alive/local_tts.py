@@ -18,14 +18,29 @@ tts_queue = []
 running_tasks = 0
 
 
-def tts_task_queue():
-    global tts_done, tts_queue, running_tasks
-    prompt_speech_16k = load_wav("./asset/Broniya.mp3", 16000)
+def tts_task_queue(speaker: str):
+    global tts_done, tts_queue
     while True:
         if len(tts_queue) > 0:
-            running_tasks += 1
             txt, index = tts_queue.pop(0)
-            generate(txt, index, prompt_speech_16k)
+            if len(txt) > 0:
+                print("tts_queue running: ", txt)
+                generate(txt, index, speaker)
+            if len(tts_queue) == 0:
+                time.sleep(1)
+                tts_done = True
+        else:
+            time.sleep(0.1)
+
+
+def tts_task_queue_zero(speaker: str):
+    global tts_done, tts_queue
+    prompt_speech_16k = load_wav(f"./asset/{speaker}.mp3", 16000)
+    while True:
+        if len(tts_queue) > 0:
+            txt, index = tts_queue.pop(0)
+            if len(txt) > 0:
+                generate_zero(txt, index, prompt_speech_16k)
             if len(tts_queue) == 0:
                 time.sleep(1)
                 tts_done = True
@@ -60,14 +75,29 @@ def tts_mul_thread():
             time.sleep(1)
 
 
-def generate(txt, index, prompt_speech_16k):
-    global tts_done, tts_queue, running_tasks
+def generate(txt, index, speaker):
     for i, j in enumerate(
-        cosyvoice.inference_instruct2(
-            txt,
-            alive_config.get("tts")["cosy"]["instruct_text"],
-            prompt_speech_16k,
+        cosyvoice.inference_sft(
+            tts_text=txt,
+            spk_id=speaker,
             stream=False,
+            speed=1.0,
+        )
+    ):
+        torchaudio.save(
+            f"./asset/temp/{index}.wav", j["tts_speech"], cosyvoice.sample_rate
+        )
+    # running_tasks -= 1
+
+
+def generate_zero(txt, index, prompt_speech_16k):
+    for i, j in enumerate(
+        cosyvoice.inference_zero_shot(
+            tts_text=txt,
+            prompt_text="如今我知晓了，妹妹曾经不忍心见到花瓣凋零，便时时刻刻守望着花海，知道它们走向生命的终点。",
+            prompt_speech_16k=prompt_speech_16k,
+            stream=False,
+            speed=1.0,
         )
     ):
         torchaudio.save(
@@ -89,7 +119,7 @@ def set_tts_start():
     tts_done = False
 
 
-def load_voice_data(speaker):
+def load_speaker_data(speaker):
     """load voice data"""
     voice_path = f"./models/tts_voices/{speaker}.pt"
     try:

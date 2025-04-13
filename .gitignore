@@ -1,5 +1,4 @@
-alive/__pycache__/*
-cosyvoice/__pycache__/*
+**/__pycache__/*
 
 models/CosyVoice2-0.5B/*
 pack/*
