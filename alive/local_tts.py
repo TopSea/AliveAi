@@ -10,7 +10,7 @@ import os
 from pydub import AudioSegment
 
 cosyvoice = CosyVoice2(
-    "models/CosyVoice2-0.5B", load_jit=False, load_trt=False, fp16=True
+    "pretrained_models/CosyVoice2-0.5B", load_jit=False, load_trt=False, fp16=True
 )
 alive_config = AliveConfig()
 tts_done = False
@@ -20,6 +20,7 @@ running_tasks = 0
 
 def tts_task_queue(speaker: str):
     global tts_done, tts_queue
+    os.makedirs("./asset/temp", exist_ok=True)
     while True:
         if len(tts_queue) > 0:
             txt, index = tts_queue.pop(0)
@@ -35,6 +36,7 @@ def tts_task_queue(speaker: str):
 
 def tts_task_queue_zero(speaker: str):
     global tts_done, tts_queue
+    os.makedirs("./asset/temp", exist_ok=True)
     prompt_speech_16k = load_wav(f"./asset/{speaker}.mp3", 16000)
     while True:
         if len(tts_queue) > 0:
@@ -54,6 +56,7 @@ def tts_mul_thread():
     good for non stream task.
     """
     global tts_done, tts_queue, running_tasks
+    os.makedirs("./asset/temp", exist_ok=True)
     prompt_speech_16k = load_wav("./asset/Broniya.mp3", 16000)
     max_task = 2
     while True:

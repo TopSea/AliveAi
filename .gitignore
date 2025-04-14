@@ -1,5 +1,7 @@
-**/__pycache__/*
+**/__pycache__
 
 models/CosyVoice2-0.5B/*
 pack/*
 temp/*
+asset/temp/*
+pretrained_models/*

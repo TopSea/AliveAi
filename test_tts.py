@@ -3,7 +3,7 @@ import time
 from alive.api_llm import split_by_period
 from alive.av_util import push_play_queue
 
-from alive.local_tts import append_tts_queue, tts_task_queue
+from alive.local_tts import append_tts_queue, tts_task_queue, tts_task_queue_zero
 
 
 test_txt = """
@@ -37,7 +37,7 @@ for line in test_tts_queue:
 print("line: ", txt)
 append_tts_queue(txt, index)
 
-tts_task_queue("遐蝶")
+tts_task_queue_zero("遐蝶")
 
 # tts_thread = threading.Thread(target=tts_task_queue, args=())
 # tts_thread.start()
