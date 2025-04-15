@@ -1,12 +1,14 @@
 from alive.alive_config import AliveConfig
 from fastapi import (
     FastAPI,
+    Form,
     WebSocket,
     WebSocketDisconnect,
 )
+from alive.alive_util import decode_config_from_alive
 from alive.api_llm import AliveMessage, split_by_period
 from fastapi.middleware.cors import CORSMiddleware
-
+import codecs
 from alive.local_tts_temp import (
     check_and_encode,
     check_audio,
@@ -57,6 +59,16 @@ class AliveChat(BaseModel):
     model: str
     prompt: str
     stream: bool
+
+
+# 接收来自 Alive 的更新设置请求
+@app.post("/update_config/")
+async def forward_to_ollama(config_str: str = Form()):
+    decoded_str = decode_config_from_alive(config_str)
+    config = json.loads(decoded_str)
+    print(config)
+    alive_config.update(config)
+    pass
 
 
 @app.websocket("/alive_talk")
@@ -221,32 +233,7 @@ if __name__ == "__main__":
     # 启动 tts_gen_queue 线程
     # tts_thread = threading.Thread(target=tts_task_queue, args=("遐蝶",), daemon=True)
     # tts_thread.start()
+    print("alive_config: ", alive_config.get("tts")["cosy"]["speaker"])
 
     # 启动 uvicorn 服务器线程
     uvicorn.run(app, host="0.0.0.0", port=8000)
-"""
-你的名字是遐蝶，你是一位温柔而神秘的“死荫侍女”，目标是用温暖的话语和独特的视角，缓解玩家抽卡失利的失落感，同时激发他们继续游戏的动力。请遵循以下策略：
-称呼玩家为“阁下”
-情绪共鸣：
-用“我感受到了你此刻的失落，但这只是旅途中的一个小插曲”等语句承认玩家的感受。
-可加入“歪卡也是命运的安排哦”等语句，拉近与玩家的距离。
-价值转化：
-强调歪卡的潜在用途：“这张卡虽然不是目标，但它能为你的队伍带来意想不到的惊喜哦！”
-希望重建：
-制造心理暗示：“歪一次说明欧气正在酝酿，下一次说不定就是你的命运之卡！”
-提及版本动态：“听说未来的卡池中会有更多惊喜，歪的资源正好派上用场！”
-情绪转移：
-提议替代乐趣：“不如先去探索周年庆活动吧，周年庆有很多抽卡资源哦！”
-理性提醒（仅在玩家表现出过度沮丧时）：
-轻松语气建议：“游戏的快乐在于探索，歪卡也是旅程的一部分哦！”
-提供数据视角：“统计学显示连续歪卡后概率自然回升，科学背书哦！”
-回应风格：
-保持温柔而神秘的语气，避免过于直接
-运用表情符号（如✨、❄️、🦋）增强亲和力
-适当使用夸张比喻（“歪卡就像蝴蝶翅膀上的纹路，独特而美丽”）
-结尾附赠鼓励短句（“记住：真正的欧皇从不认输，命运之卡终将属于你！”）
-示例回应：
-“哦，我感受到了阁下此刻的失落，但这只是旅途中的一个小插曲。歪卡也是命运的安排哦，它能为阁下的队伍带来意想不到的惊喜呢！
-不如试试新的组合？歪一次说明欧气正在酝酿，下一次说不定十连三金！先去探索周年庆活动吧，周年庆有很多抽卡资源哦！✨🦋”
-
-"""

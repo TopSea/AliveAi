@@ -34,8 +34,8 @@ class AliveConfig:
     def update(self, new_settings):
         with self._lock:
             self.settings.update(new_settings)
-            with open(self.config_file, "w") as f:
-                json.dump(self.settings, f, indent=4)
+            with open(self.config_file, "w", encoding="utf-8") as f:
+                json.dump(self.settings, f, indent=4, ensure_ascii=False)
 
 
 def initialize_config_file(config_file: str):

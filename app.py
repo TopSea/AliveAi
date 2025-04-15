@@ -1,6 +1,7 @@
 from alive.alive_config import AliveConfig
 from fastapi import (
     FastAPI,
+    Form,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -58,6 +59,15 @@ class AliveChat(BaseModel):
     model: str
     prompt: str
     stream: bool
+
+
+# 接收来自 Alive 的更新设置请求
+@app.post("/update_config/")
+async def forward_to_ollama(config_str: str = Form()):
+    config = json.loads(config_str)
+    print(config)
+    alive_config.update(config)
+    pass
 
 
 @app.websocket("/alive_talk")
@@ -226,4 +236,4 @@ if __name__ == "__main__":
     tts_thread.start()
 
     # 启动 uvicorn 服务器线程
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=20167)
