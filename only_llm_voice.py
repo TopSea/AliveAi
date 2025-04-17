@@ -147,6 +147,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     "done": True,
                 }
                 await manager.send_personal_message(json.dumps(user_message), websocket)
+
+            if history[-1]["role"] == "user":
                 await send_text(alive_msg, websocket)
 
             # combine voice message and history message, and then send to ollama
