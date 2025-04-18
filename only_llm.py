@@ -6,25 +6,14 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from alive.alive_util import decode_config_from_alive
-from alive.api_llm import AliveMessage, split_by_period
+from alive.api_llm import AliveMessage
 from fastapi.middleware.cors import CORSMiddleware
-import codecs
 from alive.local_tts_temp import (
-    check_and_encode,
     check_audio,
 )
 
-# from alive.local_tts import (
-#     append_tts_queue,
-#     check_and_encode,
-#     check_audio,
-#     is_tts_done,
-#     set_tts_start,
-#     tts_task_queue,
-# )
 from typing import Dict, List
 from pydantic import BaseModel
-import threading
 import aiohttp
 import uvicorn
 import json
@@ -104,7 +93,9 @@ async def websocket_endpoint(websocket: WebSocket):
             print(f"alive_msg: {alive_msg}")
 
             # Ollama API 的 URL
-            ollama_api_url = alive_config.get("llm")["ollama"]["ollama_api"]
+            ollama_api_url = (
+                alive_config.get("llm")["ollama"]["ollama_api"] + "/api/chat/"
+            )
 
             async def send_audio():
                 nonlocal next_sending
@@ -137,18 +128,6 @@ async def websocket_endpoint(websocket: WebSocket):
                     else:
                         time.sleep(0.1)
 
-            # This func is fine. the client can not decode this many chars.
-            # async def send_audio_encoded():
-            #     print("send_audio: ", is_tts_done())
-            #     while not is_tts_done:
-            #         audio_code = check_and_encode()
-            #         # 检查是否有 tts 文件生成了，如果有就发送
-            #         if audio_code:
-            #             audio_data = {"data": audio_code}
-            #             await websocket.send_json(json.dumps(audio_data))
-            #         else:
-            #             time.sleep(0.1)
-
             # 主线程处理文字消息并发送任务到伴生线程
             async def send_text():
                 txt: str = ""
@@ -170,34 +149,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                 obj, pos = decoder.raw_decode(decoded_line, pos)
                                 pos += 1
 
-                                if "message" in obj:
-                                    txt += obj.get("message")["content"]
-                                    if (
-                                        txt.count("。")
-                                        + txt.count("！")
-                                        + txt.count("？")
-                                        >= 2
-                                    ):
-                                        # 根据句号分段进行 TTS 生成
-                                        curr, next = split_by_period(txt)
-                                        # print("line: ", curr)
-                                        # if len(curr) > 0:
-                                        #     append_tts_queue(curr, index)
-                                        index += 1
-                                        txt = next
-
-                                # 检查是否有 tts 文件生成了，如果有就发送
-                                # file_name, audio_code = check_and_encode()
-                                # if audio_code:
-                                #     audio_data = {"name": file_name, "audio": audio_code}
-                                #     await websocket.send_json(json.dumps(audio_data))
-
                                 if obj.get("done"):
-                                    # 最后一句记得加上
-                                    # print("line: ", txt)
-                                    # if len(txt) > 0:
-                                    #     append_tts_queue(txt, index)
-                                    # 等待所有 tts 发送完毕
                                     await send_audio()
                                     pass
 
@@ -207,7 +159,6 @@ async def websocket_endpoint(websocket: WebSocket):
             # 并发运行文字发送任务
             if alive_msg.get("ollama_msg"):
                 next_sending = 0
-                # set_tts_start()
                 # 并发运行 TTS 生成和文字发送任务
                 await send_text()
 
@@ -230,10 +181,5 @@ if __name__ == "__main__":
     #     print(f"配置文件初始化失败: {e}")
     #     sys.exit(1)  # 退出程序
 
-    # 启动 tts_gen_queue 线程
-    # tts_thread = threading.Thread(target=tts_task_queue, args=("遐蝶",), daemon=True)
-    # tts_thread.start()
-    print("alive_config: ", alive_config.get("tts")["cosy"]["speaker"])
-
     # 启动 uvicorn 服务器线程
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=20167)

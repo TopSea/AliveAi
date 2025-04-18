@@ -5,6 +5,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from alive.alive_util import decode_config_from_alive
 from alive.api_llm import AliveMessage, split_by_period
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -64,7 +65,8 @@ class AliveChat(BaseModel):
 # 接收来自 Alive 的更新设置请求
 @app.post("/update_config/")
 async def forward_to_ollama(config_str: str = Form()):
-    config = json.loads(config_str)
+    decoded_str = decode_config_from_alive(config_str)
+    config = json.loads(decoded_str)
     print(config)
     alive_config.update(config)
     pass
