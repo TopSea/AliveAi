@@ -1,30 +1,29 @@
 import io
-from faster_whisper import WhisperModel
-import numpy as np
-import torch
+import wave
+
 import torchaudio
+from alive.alive_util import decode_config_from_alive
+from fastapi.middleware.cors import CORSMiddleware
+from cosyvoice.cli.cosyvoice import CosyVoice2
 from alive.alive_config import AliveConfig
+from faster_whisper import WhisperModel
+from alive.api_llm import AliveMessage
+from alive.local_tts import load_wav
+from pydantic import BaseModel
 from fastapi import (
+    WebSocketDisconnect,
+    WebSocket,
     FastAPI,
     Form,
-    WebSocket,
-    WebSocketDisconnect,
 )
-from alive.alive_util import decode_config_from_alive
-from alive.api_llm import AliveMessage
-from fastapi.middleware.cors import CORSMiddleware
-
 from typing import List
-from pydantic import BaseModel
+import numpy as np
 import aiohttp
 import uvicorn
 import json
 import time
 
 import os
-
-from alive.local_tts import load_wav
-from cosyvoice.cli.cosyvoice import CosyVoice2
 
 
 class AliveChatRequest(BaseModel):
@@ -194,27 +193,36 @@ async def send_text(alive_msgs: dict, websocket: WebSocket):
                         txt += obj.get("message")["content"]
 
                     if obj.get("done"):
-                        await send_voice(txt, websocket)
+                        await generate_voice(txt, websocket)
                         pass
 
                     # 发送文字消息
                     await websocket.send_json(obj)
 
 
-async def send_voice(voice_msg: str, websocket: WebSocket):
-    model_output = cosyvoice.inference_zero_shot(
-        voice_msg,
-        "今天的工作都完成啦，没什么事，就早点回家吧。",
-        prompt_speech_16k,
-        stream=True,
-    )
-    await websocket.send_bytes(generate_data(model_output))
-
-
-def generate_data(model_output):
-    for i in model_output:
-        tts_audio = (i["tts_speech"].numpy() * (2**15)).astype(np.int16).tobytes()
-        yield tts_audio
+async def generate_voice(voice_msg: str, websocket: WebSocket):
+    # 创建一个字节存储器对象
+    buffer = io.BytesIO()
+    for i, j in enumerate(
+        cosyvoice.inference_zero_shot(
+            voice_msg,
+            alive_config.get("tts")["cosy"]["instruct_text"],
+            prompt_speech_16k,
+            stream=True,
+            speed=1.0,
+        )
+    ):
+        # 获取音频数据
+        audio_tensor = j["tts_speech"]
+        # 将音频张量写入字节存储器
+        buffer.seek(0)
+        torchaudio.save(buffer, audio_tensor, cosyvoice.sample_rate, format="wav")
+        # 获取音频字节数据
+        audio_bytes = buffer.getvalue()
+        # 通过 WebSocket 发送音频字节数据
+        await websocket.send_bytes(audio_bytes)
+    # 关闭字节存储器
+    buffer.close()
 
 
 if __name__ == "__main__":
