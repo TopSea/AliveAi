@@ -72,7 +72,7 @@ async def forward_to_ollama(config_str: str = Form()):
     pass
 
 
-@app.websocket("/alive_talk")
+@app.websocket("/alive_talk/{client_id}")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     next_sending = 0
@@ -105,7 +105,9 @@ async def websocket_endpoint(websocket: WebSocket):
             print(f"alive_msg: {alive_msg}")
 
             # Ollama API 的 URL
-            ollama_api_url = alive_config.get("llm")["ollama"]["ollama_api"]
+            ollama_api_url = (
+                alive_config.get("llm")["ollama"]["ollama_api"] + "/api/chat"
+            )
 
             async def send_audio():
                 nonlocal next_sending
@@ -233,7 +235,7 @@ if __name__ == "__main__":
 
     # 启动 tts_gen_queue 线程
     tts_thread = threading.Thread(
-        target=tts_task_queue_zero, args=("遐蝶",), daemon=True
+        target=tts_task_queue_zero, args=("薇薇安",), daemon=True
     )
     tts_thread.start()
 

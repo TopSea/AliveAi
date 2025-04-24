@@ -1,7 +1,3 @@
-import io
-import wave
-
-import torchaudio
 from alive.alive_util import decode_config_from_alive
 from fastapi.middleware.cors import CORSMiddleware
 from cosyvoice.cli.cosyvoice import CosyVoice2
@@ -18,11 +14,12 @@ from fastapi import (
 )
 from typing import List
 import numpy as np
+import torchaudio
 import aiohttp
 import uvicorn
 import json
 import time
-
+import io
 import os
 
 
@@ -235,3 +232,4 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=20167)
     # 遐蝶：如今我知晓了，妹妹曾经不忍心见到花瓣凋零，便时时刻刻守望着花海，知道它们走向生命的终点。
     # 布洛妮娅：今天的工作都完成啦，没什么事，就早点回家吧。
+    # 薇薇安：原来是你在散播消息，怪不得我怎么查也没查到是谁在推动舆论。

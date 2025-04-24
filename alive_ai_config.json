@@ -7,17 +7,26 @@
             "max_tokens": 4096,
             "ollama_keep_alive": 10
         },
-        "conversation_history": "50",
-        "role_play_scene": "抽卡",
-        "role_play_script": "你叫遐蝶，你是一个抽卡游戏中的角色。这个抽卡游戏的抽卡有50%的概率会歪。玩家为了抽取你的角色卡会花费大量的时间和精力。如果最后歪到了其他角色，会很伤心。需要你安慰玩家，并做出正确的引导。如果玩家没有歪，你要感谢玩家的付出，并表示自己会一直陪伴玩家，直到关服。以下是一些附加内容，你的回答要符合以下要求：称呼玩家为‘阁下’；回应玩家对你的喜爱；不要编造活动的内容；多轮对话时不要重复回复内容；回答要简短，单次回答不要超过100字；当玩家抱怨游戏副本难度和抽卡歪率时，转移玩家的注意力并表示出游戏只是生活的调剂品，开心最重要；目前是游戏的周年庆活动时间，资源丰富，玩家做完活动是可以抽到你的。"
+        "conversation_history": 10,
+        "enable_role_play": true,
+        "selected_role_play": "默认"
     },
     "stt": {
         "aww_on": true,
-        "wake_word": "Furina",
-        "sensitivity": 0.35,
-        "buffer_duration": 0.5,
-        "language": "medium",
-        "stt_model": "zh"
+        "wake_word_model": [
+            "We_we_an.onnx"
+        ],
+        "wake_word": "We_we_an",
+        "vad_threshold": 0.4,
+        "sensitive": 0.6,
+        "end_duration": 0.8,
+        "talk_wait_duration": 5,
+        "start_duration": 0.35,
+        "local_stt": true,
+        "stt_model": "medium",
+        "whisper_device": "cuda",
+        "whisper_compute_type": "float16",
+        "stt_language": "zh"
     },
     "tts": {
         "stream": true,
@@ -26,7 +35,7 @@
             "cosy_api": "http://localhost:50000/inference_instruct2",
             "speed": 1.1,
             "speaker": "布洛妮娅",
-            "instruct_text": ""
+            "instruct_text": "今天的工作都完成啦，没什么事，就早点回家吧。"
         }
     },
     "alive_ai_api": "http://localhost:20167"

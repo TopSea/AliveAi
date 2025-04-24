@@ -97,10 +97,10 @@ def generate_zero(txt, index, prompt_speech_16k):
     for i, j in enumerate(
         cosyvoice.inference_zero_shot(
             tts_text=txt,
-            prompt_text="如今我知晓了，妹妹曾经不忍心见到花瓣凋零，便时时刻刻守望着花海，知道它们走向生命的终点。",
+            prompt_text="原来是你在散播消息，怪不得我怎么查也没查到是谁在推动舆论。",
             prompt_speech_16k=prompt_speech_16k,
             stream=False,
-            speed=1.0,
+            speed=1.1,
         )
     ):
         torchaudio.save(
