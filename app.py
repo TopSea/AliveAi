@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from alive.alive_config import AliveConfig
 from fastapi import (
     FastAPI,
@@ -32,6 +33,11 @@ import json
 import time
 
 import os
+
+# 加载 .env 文件
+load_dotenv()
+# 读取 LOCK_CONFIG_PWD 的值
+lock_config_pwd = os.environ.get("LOCK_CONFIG_PWD")
 
 
 class AliveChatRequest(BaseModel):
@@ -68,8 +74,11 @@ async def forward_to_ollama(config_str: str = Form()):
     decoded_str = decode_config_from_alive(config_str)
     config = json.loads(decoded_str)
     print(config)
-    alive_config.update(config)
-    pass
+    if len(lock_config_pwd) > 0:
+        if lock_config_pwd == config.get("config_pwd"):
+            alive_config.update(config)
+    else:
+        alive_config.update(config)
 
 
 @app.websocket("/alive_talk/{client_id}")

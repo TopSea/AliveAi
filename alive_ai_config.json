@@ -14,15 +14,15 @@
     "stt": {
         "aww_on": true,
         "wake_word_model": [
-            "We_we_an.onnx"
+            "Furina.onnx"
         ],
-        "wake_word": "We_we_an",
+        "wake_word": "Furina",
         "vad_threshold": 0.4,
         "sensitive": 0.6,
         "end_duration": 0.8,
         "talk_wait_duration": 5,
         "start_duration": 0.35,
-        "local_stt": true,
+        "local_stt": false,
         "stt_model": "medium",
         "whisper_device": "cuda",
         "whisper_compute_type": "float16",
@@ -38,5 +38,6 @@
             "instruct_text": "今天的工作都完成啦，没什么事，就早点回家吧。"
         }
     },
-    "alive_ai_api": "http://localhost:20167"
+    "alive_ai_api": "http://localhost:20167",
+    "config_pwd": "changethis"
 }
