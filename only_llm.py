@@ -6,6 +6,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from alive.alive_nlp import emotion_classify
 from alive.alive_util import decode_config_from_alive
 from alive.api_llm import AliveMessage
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +20,6 @@ import aiohttp
 import uvicorn
 import json
 import time
-
 import os
 
 # 加载 .env 文件
@@ -72,7 +72,6 @@ async def forward_to_ollama(config_str: str = Form()):
 @app.websocket("/alive_talk/{client_id}")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    next_sending = 0
 
     try:
         while True:
@@ -95,81 +94,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 time.sleep(0.1)
                 continue
             alive_msg = json.loads(text)
-            # i don`t know why, but i got this error: AttributeError: 'str' object has no attribute 'get'
-            if type(alive_msg) != Dict:
-                # alive_msg: Dict = json.loads(alive_msg)
-                pass
             print(f"alive_msg: {alive_msg}")
-
-            # Ollama API 的 URL
-            ollama_api_url = (
-                alive_config.get("llm")["ollama"]["ollama_api"] + "/api/chat/"
-            )
-
-            async def send_audio():
-                nonlocal next_sending
-                # print("send_audio: ", is_tts_done())
-                audio = check_audio()
-                while audio:
-                    # 检查是否有 tts 文件生成了，如果有就发送
-                    audio = check_audio()
-                    if audio:
-                        filename = os.path.basename(audio)
-                        print("send_audio filename: ", filename)
-                        name, _ = os.path.splitext(filename)
-                        # 按顺序发送
-                        curr_sending = int(name)
-                        print(
-                            "send_audio curr_sending: {}, {}",
-                            curr_sending,
-                            next_sending,
-                        )
-                        if curr_sending != next_sending:
-                            time.sleep(0.1)
-                            continue
-                        next_sending += 1
-                        with open(audio, mode="rb") as file_like:
-                            await websocket.send_bytes(file_like.read())
-                        try:
-                            os.remove(audio)
-                        except Exception as e:
-                            print(f"删除文件时出错: {e}")
-                    else:
-                        time.sleep(0.1)
-
-            # 主线程处理文字消息并发送任务到伴生线程
-            async def send_text():
-                txt: str = ""
-                index = 0
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        ollama_api_url,
-                        json=alive_msg.get("ollama_msg"),
-                    ) as response:
-                        response.raise_for_status()
-
-                        async for line in response.content.iter_any():
-                            decoded_line = line.decode("utf-8")
-                            # 有时候会阻塞，然后传来一堆 json
-                            decoder = json.JSONDecoder()
-                            pos = 0
-                            while pos < len(decoded_line):
-                                print(f"decoded_line: {decoded_line}, pos: {pos}")
-                                obj, pos = decoder.raw_decode(decoded_line, pos)
-                                pos += 1
-
-                                if obj.get("done"):
-                                    await send_audio()
-                                    pass
-
-                                # 发送文字消息
-                                await websocket.send_json(obj)
 
             # 并发运行文字发送任务
             if alive_msg.get("ollama_msg"):
-                next_sending = 0
                 # 并发运行 TTS 生成和文字发送任务
-                await send_text()
+                await send_text(alive_msg, websocket)
 
             else:
                 await websocket.send_json({"error": "消息格式错误"})
@@ -178,6 +108,39 @@ async def websocket_endpoint(websocket: WebSocket):
         print("WebSocket connection closed")
     finally:
         pass
+
+
+# 主线程处理文字消息并发送任务到伴生线程
+async def send_text(alive_msg: dict, websocket: WebSocket):
+    ollama_api_url = alive_config.get("llm")["ollama"]["ollama_api"] + "/api/chat/"
+    txt: str = ""
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            ollama_api_url,
+            json=alive_msg.get("ollama_msg"),
+        ) as response:
+            response.raise_for_status()
+
+            async for line in response.content.iter_any():
+                decoded_line = line.decode("utf-8")
+                # 有时候会阻塞，然后传来一堆 json
+                decoder = json.JSONDecoder()
+                pos = 0
+                while pos < len(decoded_line):
+                    print(f"decoded_line: {decoded_line}, pos: {pos}")
+                    obj, pos = decoder.raw_decode(decoded_line, pos)
+                    pos += 1
+
+                    if "message" in obj:
+                        txt += obj.get("message")["content"]
+
+                    if obj.get("done"):
+                        emotion = emotion_classify(txt)
+                        print(f"emotion: {emotion}")
+                        await websocket.send_text(emotion)
+
+                    # 发送文字消息
+                    await websocket.send_json(obj)
 
 
 if __name__ == "__main__":

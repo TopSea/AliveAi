@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from alive.alive_nlp import emotion_classify
 from alive.alive_util import decode_config_from_alive
 from fastapi.middleware.cors import CORSMiddleware
 from cosyvoice.cli.cosyvoice import CosyVoice2
@@ -199,6 +200,9 @@ async def send_text(alive_msgs: dict, websocket: WebSocket):
                         txt += obj.get("message")["content"]
 
                     if obj.get("done"):
+                        emotion = emotion_classify(txt)
+                        print(f"emotion: {emotion}")
+                        await websocket.send_text(emotion)
                         await generate_voice(txt, websocket)
                         pass
 
