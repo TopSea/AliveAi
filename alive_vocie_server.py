@@ -170,8 +170,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 }
                 await manager.send_personal_message(json.dumps(user_message), websocket)
 
-            if history[-1]["role"] == "user":
+            if len(history) > 0 and history[-1]["role"] == "user":
                 await send_text(alive_msg, websocket)
+            else:
+                continue
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)

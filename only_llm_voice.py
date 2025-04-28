@@ -7,6 +7,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from alive.alive_nlp import emotion_classify
 from alive.alive_util import decode_config_from_alive
 from alive.api_llm import AliveMessage
 from fastapi.middleware.cors import CORSMiddleware
@@ -157,8 +158,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 }
                 await manager.send_personal_message(json.dumps(user_message), websocket)
 
-            if history[-1]["role"] == "user":
+            if len(history) > 0 and history[-1]["role"] == "user":
                 await send_text(alive_msg, websocket)
+            else:
+                continue
 
             # combine voice message and history message, and then send to ollama
 
@@ -170,7 +173,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 
 async def send_text(alive_msgs: dict, websocket: WebSocket):
-
+    txt: str = ""
     print(f"alive_msgs: {alive_msgs}")
     async with aiohttp.ClientSession() as session:
         async with session.post(
@@ -189,8 +192,13 @@ async def send_text(alive_msgs: dict, websocket: WebSocket):
                     obj, pos = decoder.raw_decode(decoded_line, pos)
                     pos += 1
 
+                    if "message" in obj:
+                        txt += obj.get("message")["content"]
+
                     if obj.get("done"):
-                        # await send_audio()
+                        emotion = emotion_classify(txt)
+                        print(f"emotion: {emotion}")
+                        await websocket.send_text(emotion)
                         pass
 
                     # 发送文字消息

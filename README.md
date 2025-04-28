@@ -5,7 +5,8 @@
 **我对 Python 的了解不多，也就只会写几个简单的脚本，代码可能写的很烂，特别是多线程部分。欢迎提 issue 和 pr。**
 
 ## 上游依赖
-**需要 Ollama API 服务** 
+**需要 Ollama API 服务**     
+把 `OLLAMA_ORIGINS=http://tauri.localhost` 添加到 Ollama 服务器的环境变量中    
 
 ## 流程规划
 - [x] 用 [RealtimeSTT] 实现语音唤醒和语音识别（本软件独立运行才需要，[Alive] 本身自带唤醒功能）
@@ -40,6 +41,14 @@ sudo yum install sox sox-devel
 python ./test/download_models.py
 # 启动 AliveAi 服务器
 python app.py
+# 启动 AliveAi 服务器，可接收语音信息（手机端基本上就用这个）
+python alive_voice_server.py
+# 跟上面差不多，只是这个是生成并保存为语音文件后再发送，如果生成比较慢，建议用这个
+python alive_voice_server_file.py
+# 启动 AliveAi 服务器，只使用大语言模型，不生成语音
+python only_llm.py
+# 启动 AliveAi 服务器，只使用大语言模型，不生成语音，可接收语音信息
+python only_llm_voice.py
 # 独立运行（尚未完成）
 python furina.py
 ```

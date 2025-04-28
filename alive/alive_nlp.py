@@ -1,23 +1,16 @@
 import json
+from modelscope.utils.constant import Tasks
 from modelscope.pipelines import pipeline
 
 semantic_cls = pipeline(
-    "rex-uninlu",
-    model="pretrained_models/nlp_deberta_rex-uninlu_chinese-base",
+    Tasks.siamese_uie,
+    model="pretrained_models/nlp_structbert_siamese-uninlu_chinese-base",
 )
 
 
 def emotion_classify(txt: str):
     classify = semantic_cls(
-        input=f"[CLASSIFY]{txt}",
-        schema={
-            "兴奋": None,
-            "开心": None,
-            "失落": None,
-            "哀伤": None,
-            "愤怒": None,
-            "惊讶": None,
-            "无情绪": None,
-        },
+        input=f"无情绪,兴奋,开心,失落,哀伤,愤怒,惊讶|{txt}。", schema={"情感分类": None}
     )
+    print(classify)
     return json.dumps(classify)
