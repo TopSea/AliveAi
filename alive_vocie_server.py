@@ -48,7 +48,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model_size = "medium"
+model_size = "./pretrained_models/faster-whisper-medium"
 
 # Run on GPU with FP16
 model = WhisperModel(model_size, device="cuda", compute_type="float16")
@@ -70,6 +70,22 @@ class AliveChat(BaseModel):
     model: str
     prompt: str
     stream: bool
+
+
+# 增加：文件类型识别函数（通过文件头判断）
+def get_audio_format(voice_data: bytes) -> str:
+    """
+    根据音频数据的文件头判断格式
+    返回 'wav'、'webm' 或 'unknown'
+    """
+    # WAV文件头：前4字节为"RIFF"（十六进制：52 49 46 46）
+    if len(voice_data) >= 4 and voice_data[:4] == b"RIFF":
+        return "wav"
+    # WebM文件头：前4字节为"EBML"（十六进制：1A 45 DF A3，对应EBML标识）
+    if len(voice_data) >= 4 and voice_data[:4] == b"\x1a\x45\xdf\xa3":
+        return "webm"
+    # 可扩展其他格式（如mp3：前3字节为ID3等）
+    return "unknown"
 
 
 # 接收来自 Alive 的更新设置请求
@@ -115,11 +131,12 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket)
     try:
         while True:
-            voice_file = f"./asset/{client_id}.webm"
             text = ""
+            voice_file = None  # 动态生成文件名
             voice_file_write = False
+            audio_format = None  # 存储识别到的格式
 
-            # receive clients messages
+            # 接收客户端消息
             message = await websocket.receive()
             if message["type"] == "websocket.receive":
                 if "text" in message:
@@ -127,9 +144,19 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     print(f"Received text: {text}")
                 elif "bytes" in message:
                     voice_data = message["bytes"]
+                    # 关键：识别音频格式
+                    audio_format = get_audio_format(voice_data)
+                    if audio_format == "unknown":
+                        print("Unsupported audio format")
+                        continue  # 不处理未知格式
+
+                    # 动态生成对应格式的文件名
+                    voice_file = f"./asset/{client_id}.{audio_format}"
+                    # 写入文件
                     with open(voice_file, "wb") as f:
                         f.write(voice_data)
                     voice_file_write = True
+                    print(f"Received {audio_format} audio, saved to {voice_file}")
                 else:
                     print("Unknown message type")
             elif message["type"] == "websocket.disconnect":
@@ -137,34 +164,36 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 break
 
             if text == "ping":
-                time.sleep(0.1)
+                await manager.send_personal_message("pong", websocket)
                 continue
             if text != "":
-                # history messages
+                # 历史消息处理
                 alive_msg: dict = json.loads(text)
                 history: list = alive_msg["ollama_msg"]["messages"]
 
-            if voice_file_write:
+            if voice_file_write and voice_file:  # 确保文件已生成
+                # 模型通常可自动识别文件格式，无需额外指定
                 segments, _ = model.transcribe(voice_file, beam_size=5, vad_filter=True)
                 voice_text = ""
                 for segment in segments:
                     voice_text += segment.text
                 voice_text = voice_text.strip()
-                os.remove(voice_file)
+                os.remove(voice_file)  # 处理后删除临时文件
 
                 if voice_text == "":
-                    # no message in voice data
+                    print("No valid content in audio")
                     continue
-                print(f"voice_text: {voice_text}")
+                print(f"Transcribed text: {voice_text}")
 
                 new_message = {
                     "role": "user",
                     "content": voice_text,
                 }
-                # combine voice message and history message
                 history.append(new_message)
 
                 user_message = {
+                    "model": "",
+                    "created_at": "",
                     "message": new_message,
                     "done": True,
                 }
